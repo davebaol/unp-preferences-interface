@@ -34,23 +34,25 @@ function route(app, endpoints, resourceName, callback) {
 }
 
 
-module.exports = (endpoints, options) => {
-  const app = express();
+module.exports = (options, callback) => {
+  options = options || {};
+  options.endpoints = options.endpoints || {};
 
-  console.log(JSON.stringify(options, null, 2));
+  // Create express app
+  const app = express();
   
   // Mount middleware
-  app.use(bodyParser.json({ limit: options.maxRequestBodySize }));
+  app.use(bodyParser.json({ limit: options.maxRequestBodySize || '5mb' }));
 
   // Mount users
-  route(app, endpoints, 'users', (router, resource) => {
+  route(app, options.endpoints, 'users', (router, resource) => {
     router.post('/', resource.getUsers);
     router.get('/:user_id', resource.getUser);
     router.post('/:user_id', resource.postUser);
   });
 
   // Mount services
-  route(app, endpoints, 'services', (router, resource) => {
+  route(app, options.endpoints, 'services', (router, resource) => {
     router.get('/', resource.getServices);
     router.post('/', resource.createService);
     router.get('/:service_id', resource.getService);
@@ -63,7 +65,5 @@ module.exports = (endpoints, options) => {
   app.use(handlers.error);
 
   // Start server
-  app.listen(options.port, () => {
-    console.log('preferences started at', new Date().toISOString(), 'on port', options.port);
-  });
+  app.listen(options.port || 8081, callback);
 };
