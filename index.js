@@ -1,58 +1,57 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const Boom = require('@hapi/boom');
+const merge = require('merge');
 const handlers = require('./handlers');
 
 function notImplemented(req, res, next) {
   return next(Boom.notImplemented());
 }
 
-const defaultEndpoints = {
-  users: {
-    getUser: notImplemented,
-    getUsers: notImplemented,
-    postUser: notImplemented
-  },
-  services: {
-    getServices: notImplemented,
-    getService: notImplemented,
-    createService: notImplemented,
-    updateService: notImplemented
+const defaultOptions = {
+  port: 8081,
+  maxRequestBodySize: '5mb',
+  endpoints: {
+    users: {
+      getUser: notImplemented,
+      getUsers: notImplemented,
+      postUser: notImplemented
+    },
+    services: {
+      getServices: notImplemented,
+      getService: notImplemented,
+      createService: notImplemented,
+      updateService: notImplemented
+    }  
   }
 } 
 
-function merge(endpoints, resourse) {
-  return Object.assign({}, defaultEndpoints[resourse], endpoints[resourse]);
-}
-
-function route(app, endpoints, resourceName, callback) {
-  const resource = merge(endpoints, resourceName);
+function route(app, endpoints, resource, callback) {
   const router = express.Router();
-  callback(router, resource);
+  callback(router, endpoints[resource]);
   router.all('/', handlers.methodNotAllowed);
-  app.use(`/api/v1/${resourceName}`, router);
+  app.use(`/api/v1/${resource}`, router);
 }
 
 
 module.exports = (options, callback) => {
-  options = options || {};
-  options.endpoints = options.endpoints || {};
+  const opts = merge.recursive(true, defaultOptions, options);
 
   // Create express app
   const app = express();
   
   // Mount middleware
-  app.use(bodyParser.json({ limit: options.maxRequestBodySize || '5mb' }));
+  app.use(bodyParser.json({ limit: opts.maxRequestBodySize }));
 
   // Mount users
-  route(app, options.endpoints, 'users', (router, resource) => {
+  route(app, opts.endpoints, 'users', (router, resource) => {
     router.post('/', resource.getUsers);
     router.get('/:user_id', resource.getUser);
     router.post('/:user_id', resource.postUser);
   });
 
   // Mount services
-  route(app, options.endpoints, 'services', (router, resource) => {
+  route(app, opts.endpoints, 'services', (router, resource) => {
     router.get('/', resource.getServices);
     router.post('/', resource.createService);
     router.get('/:service_id', resource.getService);
@@ -65,5 +64,5 @@ module.exports = (options, callback) => {
   app.use(handlers.error);
 
   // Start server
-  app.listen(options.port || 8081, callback);
+  app.listen(opts.port, callback);
 };
