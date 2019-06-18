@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://davebaol/unp-preferences-interface.git"
+    "url": "git+https://github.com/davebaol/unp-preferences-interface.git"
   },
   "keywords": [
     "unp",
@@ -21,9 +21,9 @@
   "author": "Davide Sessi",
   "license": "MIT",
   "bugs": {
-    "url": "https://davebaol/unp-preferences-interface/issues"
+    "url": "https://github.com/davebaol/unp-preferences-interface/issues"
   },
-  "homepage": "https://davebaol/unp-preferences-interface#readme",
+  "homepage": "https://github.com/davebaol/unp-preferences-interface#readme",
   "dependencies": {
     "@hapi/boom": "^7.4.2",
     "body-parser": "^1.19.0",
