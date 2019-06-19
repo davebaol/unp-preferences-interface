@@ -11,6 +11,7 @@ function notImplemented(req, res, next) {
 const defaultOptions = {
   port: 8081,
   maxRequestBodySize: '5mb',
+  errorsForDebugging: false,
   endpoints: {
     users: {
       getUser: notImplemented,
@@ -26,32 +27,35 @@ const defaultOptions = {
   }
 } 
 
-function route(app, endpoints, resource, callback) {
-  const router = express.Router();
-  callback(router, endpoints[resource]);
-  router.all('/', handlers.methodNotAllowed);
-  app.use(`/api/v1/${resource}`, router);
-}
-
 
 module.exports = (options, callback) => {
   const opts = merge.recursive(true, defaultOptions, options);
 
   // Create express app
   const app = express();
+
+  // Init express error handlers
+  const appHandlers = handlers(opts.errorsForDebugging);
   
   // Mount middleware
   app.use(bodyParser.json({ limit: opts.maxRequestBodySize }));
 
+  function route(resource, callback) {
+    const router = express.Router();
+    callback(router, opts.endpoints[resource]);
+    router.all('/', appHandlers.methodNotAllowed);
+    app.use(`/api/v1/${resource}`, router);
+  }
+  
   // Mount users
-  route(app, opts.endpoints, 'users', (router, resource) => {
+  route('users', (router, resource) => {
     router.post('/', resource.getUsers);
     router.get('/:user_id', resource.getUser);
     router.post('/:user_id', resource.postUser);
   });
 
   // Mount services
-  route(app, opts.endpoints, 'services', (router, resource) => {
+  route('services', (router, resource) => {
     router.get('/', resource.getServices);
     router.post('/', resource.createService);
     router.get('/:service_id', resource.getService);
@@ -60,8 +64,8 @@ module.exports = (options, callback) => {
   });
 
   // Mount error handlers
-  app.use(handlers.notFound);
-  app.use(handlers.error);
+  app.use(appHandlers.notFound);
+  app.use(appHandlers.error);
 
   // Start server
   app.listen(opts.port, callback);
