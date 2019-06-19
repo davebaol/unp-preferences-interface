@@ -1,6 +1,6 @@
 {
   "name": "@davebaol/unp-preferences-interface",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Microservice interface for the preferences of the Unified Notification Platform by Almaviva",
   "main": "index.js",
   "scripts": {
