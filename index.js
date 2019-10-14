@@ -56,7 +56,7 @@ module.exports = (options, app, callback) => {
   
   // Mount users
   route('users', (router, resource) => {
-    router.post('/', resource.getUsers);
+    router.get('/', resource.getUsers);
     router.get('/:user_id', resource.getUser);
     router.post('/:user_id', resource.postUser);
   });
