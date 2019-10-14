@@ -28,11 +28,18 @@ const defaultOptions = {
 } 
 
 
-module.exports = (options, callback) => {
-  const opts = merge.recursive(true, defaultOptions, options);
+module.exports = (options, app, callback) => {
+  if (arguments.length === 2) {
+    callback = app;
+    app = undefined;
+  }
 
-  // Create express app
-  const app = express();
+  if (!app) {
+    // Create express app
+    app = express();
+  }
+
+  const opts = merge.recursive(true, defaultOptions, options);
 
   // Init express error handlers
   const appHandlers = handlers(opts.errorsForDebugging);
