@@ -3,7 +3,7 @@ const server = require('..');
 const options = {
   port: 8084,
   maxRequestBodySize: "10mb",
-  errorsForDebugging: true,
+  errorHandlers: { enabled: true, debug: true},
   // use default endopints returning 501 Not Implemented
 };
 

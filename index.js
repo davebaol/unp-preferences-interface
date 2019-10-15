@@ -10,8 +10,10 @@ function notImplemented(req, res, next) {
 
 const defaultOptions = {
   port: 8081,
+  context: '/api/v1',
   maxRequestBodySize: '5mb',
-  errorsForDebugging: false,
+  errorHandlers: { enabled: true, debug: false},
+  preMount: undefined,
   endpoints: {
     users: {
       getUser: notImplemented,
@@ -24,36 +26,23 @@ const defaultOptions = {
       createService: notImplemented,
       updateService: notImplemented
     }  
-  }
-} 
-
-
-module.exports = (options, app, callback) => {
-  if (arguments.length === 2) {
-    callback = app;
-    app = undefined;
-  }
-
-  if (!app) {
-    // Create express app
-    app = express();
-  }
-
-  const opts = merge.recursive(true, defaultOptions, options);
-
-  // Init express error handlers
-  const appHandlers = handlers(opts.errorsForDebugging);
+  },
+  postMount: undefined
+};
   
+function mountEndpoints(server) {
   // Mount middleware
-  app.use(bodyParser.json({ limit: opts.maxRequestBodySize }));
+  server.app.use(bodyParser.json({ limit: server.options.maxRequestBodySize }));
 
-  function route(resource, callback) {
+  const route = (resource, callback) => {
     const router = express.Router();
-    callback(router, opts.endpoints[resource]);
-    router.all('/', appHandlers.methodNotAllowed);
-    app.use(`/api/v1/${resource}`, router);
+    callback(router, server.options.endpoints[resource]);
+    if (server.errorHandlers) {
+      router.all('/', server.errorHandlers.methodNotAllowed);
+    }
+    server.app.use(`${server.options.context}/${resource}`, router);
   }
-  
+
   // Mount users
   route('users', (router, resource) => {
     router.get('/', resource.getUsers);
@@ -69,11 +58,34 @@ module.exports = (options, app, callback) => {
     router.post('/:service_id', resource.updateService);
     //router.delete('/:service_id', resource.deleteService);
   });
+}
 
-  // Mount error handlers
-  app.use(appHandlers.notFound);
-  app.use(appHandlers.error);
+module.exports = function(options, app, callback) {
+  if (arguments.length <= 2) {
+    callback = app;
+    app = undefined;
+  }
+
+  this.options = merge.recursive(true, defaultOptions, options || {});
+  this.app = app ? app : express();
+  this.errorHandlers = this.options.errorHandlers.enabled? handlers(this.options.errorHandlers.debug) : undefined;
+
+  if (typeof this.options.preMount === 'function') {
+    this.options.preMount(this.app);
+  }
+
+  mountEndpoints(this);
+
+  if (typeof this.options.postMount === 'function') {
+    this.options.postMount(this.app);
+  }
+
+  // Mount final error handlers
+  if (this.errorHandlers) {
+    this.app.use(errorHandlers.notFound);
+    this.app.use(errorHandlers.error);
+  }
 
   // Start server
-  app.listen(opts.port, callback);
+  this.app.listen(this.options.port, callback);
 };
